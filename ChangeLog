@@ -1,3 +1,14 @@
+2004-05-19 Wednesday 15:04  andrew_ladutsko
+
+	* src/: parse.c (1.10), token.c (1.7): fixed warnings when
+	compiling with gcc compiler
+
+2004-05-18 Tuesday 16:33  andrew_ladutsko
+
+	* test.c (1.4), htpl/parse.h (1.2), htpl/strutil.h (1.2),
+	src/parse.c (1.9), src/strutil.c (1.4): use getc() to read template
+	file and do not use static buffer; fixed compiling test.c
+
 2004-04-29 Thursday 19:14  andrew_ladutsko
 
 	* htpl/format.h (1.2), htpl/parse.h (1.1), htpl/sections.h (1.4),
