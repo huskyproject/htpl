@@ -1,3 +1,12 @@
+2004-02-12 Thursday 19:51  andrew_ladutsko
+
+	* src/checktpl.c (1.2): fixed newlines. sorry...
+
+2004-02-12 Thursday 19:45  andrew_ladutsko
+
+	* src/checktpl.c (1.1): small util to check templates for syntax
+	errors
+
 2004-01-31 Saturday 10:39  andrew_ladutsko
 
 	* test.c (1.3), htpl/htpl.h (1.3), src/parse.c (1.5): now all
