@@ -1,3 +1,12 @@
+2004-02-13 Friday 20:16  andrew_ladutsko
+
+	* htpl/htpl.h (1.4), htpl/sections.h (1.3), htpl/token.h (1.2),
+	make/makefile.mvc (1.2), src/checktpl.c (1.3), src/format.c (1.3),
+	src/parse.c (1.6), src/sections.c (1.4), src/strutil.c (1.3),
+	src/token.c (1.4), src/varlist.c (1.4): added ability to parse
+	if/else directives (taken from fidoconfig). Some fixes and
+	optimization. A lot of work is still to be done...
+
 2004-02-12 Thursday 19:51  andrew_ladutsko
 
 	* src/checktpl.c (1.2): fixed newlines. sorry...
