@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #include <huskylib/compiler.h>
 #include <huskylib/huskylib.h>

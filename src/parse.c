@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
+#include <ctype.h>
 
 #include <huskylib/compiler.h>
 #include <huskylib/huskylib.h>
@@ -104,7 +105,6 @@ short boolExpression(char *str)
 int expandMacro(template *tpl, char **macro)
 {
     char *buf=NULL;
-    char *label=NULL;
     char *fmt_ptr = NULL;
     char *format = NULL;
     char *lbl = NULL; // label of variable
@@ -210,7 +210,7 @@ int expandLine(template *tpl, char *line, char **output)
         return 0;
     }
     if (fmtStart) {
-        sprintf(htplError, "Unbalanced % operator");
+        sprintf(htplError, "Unbalanced %% operator");
         return 0;
     }
 
@@ -254,7 +254,6 @@ int parseLine(template *tpl, char *file, char *line, int lineNo)
 int parseTemplate(template *tpl, char *file)
 {
     FILE *f;
-    char *val=NULL;
     char *line=NULL;
     int lineNo=0, length=0, i=0, eof=0, eol=0, ch;
 
