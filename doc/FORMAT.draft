@@ -1,68 +1,160 @@
-Template for report can contain the following special characters:
-@ - start and end of macros. Example - @test@,             @time%|5@
-                                        ^^^^ variable name       ^^ format
-% - start/end of string format                    
-{} - place for fill substring (string formatting)
-# - parser directive. Must be 1st character in string.
-\ - escape character. Next character after escape won't be read as special 
-	character and will be drawn as is.
+
+Creating Templates for Using with Htpl Library
+================================================================
+
+
+Macros
+============================
+
+Macro starts and ends with '@' sign. When line's parsing is done the macro
+is substututed with its value.
+
+  Example: '@var1@' expands to the value of macro 'var1'.
+
+To place a '@' sign to template, escape it with a '\' sign.
+
+  Example: '\@var1\@' expands to string '@var1@'.
+
+If macro's name is not found in the list of local variables of template, then
+it is assumed that this macro is a system environment variable.
+
+  Example: '@sysvar@' expands to the value of environment variable 'sysvar'.
+
+
+Sections
+============================
         
 Parser directives:
 #include <filename>
 #section <name>
 #endsection
 
-Each section (beginning with #section and ending with #endsection) should be
-located in one file: it cannot begin in one file and end in another included
-file.
+Template file consists of one or several sections. (It can contain no sections,
+but such file should not be called a template.)
 
-Formatting:
-There is two methods of formatting:
-1) formatting variables
+Section begins with "#section <name>" and ends with "#endsection" directives.
+Each directive should be located on a separate line.
+
+Each section should be located in one file: it cannot begin in one file and
+end in another included file.
+
+If line of template is out of any section, it is simply skipped when template
+parsing is performed. So, such lines can be used as comments.
+
+  Example:
+
+  #section header
+   ...
+  #endsection
+
+  #include template.tpl
+
+  #section footer
+   ...
+  #endsection
+
+
+Condition blocks
+================================
+
+Parser directives:
+#if <expression>
+#ifdef <variable>
+#ifndef <variable>
+#elseif <expression>
+#else
+#endif
+
+Condition directives are used to parse lines of section by condition.
+
+The following expressions can be used with if or elseif commands:
+  @var@ == value
+  @var@ != value
+  @var@ =~ pattern
+  @var@ !~ pattern
+
+Part of line that contains an expression is expanded before expression is
+evaluated.
+
+If condition is true, then all the lines till #endif directive will be parsed,
+or they will be skipped if expression is false.
+
+"ifdef" block is true if <variable>'s value is defined.
+
+"ifndef" block is true if <variable>'s value is not defined.
+
+Condition block can be included in another condition block.
+
+  Example:
+
+  #if "@var@" == "value"   <-- beginning of first condition block
+   ...
+  #ifdef @var1@            <-- beginning of second condition block
+   ...
+  #endif                   <-- end of second condition block
+   ...
+  #else                    <-- continue of first condition block
+   ...
+  #endif                   <-- end of first condition block
+
+
+Formatting
+================================
+
+There are two methods of formatting:
+1) formatting macros
 2) formatting strings
 
-To format variable you should write % sign after its name and write format 
-pattern. Pattern can be in 2 formats:
+To format a macro you should write % sign after its name and write format 
+pattern. Pattern can be written in 2 ways:
+
 1) <align sign><maximum length>
-	In this case variable will be drawn aligned to <align sign> not more 
-        than <maximum length> characters.
+
+  In this case macro's name will be drawn aligned to <align sign>
+  not more than <maximum length> characters.
+
 2) <align sign><align sign><align sign><align sign>  (repeats several times)
-	The same, but maximum length is calculated by length of all macro 
-        (including '@' signs.
+
+  The same, but maximum length is calculated by length of all macro 
+  (including '@' signs).
 
 Align signs:
-'<' - align to left (default if not defined)
-'>' - align to right
-'|' - align to center
+  '<' - align to left (default)
+  '>' - align to right
+  '|' - align to center
 
-Example:
-Macro:  @time%40@
-Output: "Sat Jul 27 15:35:18 EEST 2002      "
+  Examples:
 
-Macro:  @time%|40@
-Output: "   Sat Jul 27 15:35:18 EEST 2002   "
+  Macro:  @time%40@
+  Output: "Sat Jul 27 15:35:18 EEST 2002      "
 
-Macro:   @time%||||||||||||||||||||||||||||@
-Output: "   Sat Jul 27 15:35:18 EEST 2002   "
+  Macro:  @time%|40@
+  Output: "   Sat Jul 27 15:35:18 EEST 2002   "
 
-Macro:   @time%<<<<<<<<<<<<<<<<<<<<<<<<<<<<@
-Output: "Sat Jul 27 15:35:18 EEST 2002      "
+  Macro:   @time%||||||||||||||||||||||||||||@
+  Output: "   Sat Jul 27 15:35:18 EEST 2002   "
 
-Macro:   @time%>>>>>>>>>>>>>>>>>>>>>>>>>>>>@
-Output: "      Sat Jul 27 15:35:18 EEST 2002"
+  Macro:   @time%<<<<<<<<<<<<<<<<<<<<<<<<<<<<@
+  Output: "Sat Jul 27 15:35:18 EEST 2002      "
 
-To format string you should write format at the end of string to be formatted
-between '%' signs.
-Format: <maximum length>{<fill substring>}
+  Macro:   @time%>>>>>>>>>>>>>>>>>>>>>>>>>>>>@
+  Output: "      Sat Jul 27 15:35:18 EEST 2002"
 
-Example:
-@status%1@ @areaTag@ {} "@description@"%78{.}%
+To format a string you should write format pattern between '%' signs at the end
+of string to be formatted. Format pattern:
 
-Output:
-* 910.ANNOUNCE .......................................... "Fileecho announces"
+  <maximum length>{<fill substring>}
 
-Example:
-.{}=[ Hello, @ToName@! ]={}.%78{-}%
+'{}' pattern indicates a place to be filled with <fill substring> untill
+the formatted line length is <maximum length>.
 
-Output:
-.------------------------------=[ Hello, Ed! ]=------------------------------.
+  Example:
+
+  Template line...
+
+  @status%1@ @areaTag@ {} "@description@"%76{.}%
+
+  ..will be expanded to:
+
+  * 910.ANNOUNCE ........................................ "Fileecho announces"
+
