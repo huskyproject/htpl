@@ -1,8 +1,8 @@
 SHARED=0
 
 SRCDIR=./src/
-INCDIR=./h
-OBJS = parse.o mem.o xstr.o strutil.o token.o sections.o varlist.o format.o
+INCDIR=./htpl/
+OBJS = parse.o strutil.o token.o sections.o varlist.o format.o
 CFLAGS = -ggdb 
 
 all: clean libhtpl test
