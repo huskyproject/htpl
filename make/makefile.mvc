@@ -43,25 +43,39 @@ LIBS	= ..\..\huskylib\make\huskymvc.lib
 default:
 	@echo Run 'make static' to build static version ($(TARGETLIB))
 	@echo Run 'make dll' to build dynamic version ($(TARGETDLL))
+	@echo Run 'make programs' to build static version ($(TARGETLIB)) and programs
+	@echo Run 'make dllprograms' to build dynamic version ($(TARGETDLL)) and programs
 
 static: $(TARGETLIB)
+programs: $(TARGETLIB) checktpl
 
 dll: $(TARGETDLL)
+dllprograms: $(TARGETDLL) checktpldll
 
 {$(_SRC_DIR)}.c$(_OBJ):
 	@$(CC) $(CFLAGS) $(CINCL) $(CDEFS) $(COPT) -c $<
 
 $(TARGETLIB): $(OBJS)
-	$(AR) /out:$(LIBNAME)$(_LIB) $(OBJS)
+	@echo Create $@...
+	@$(AR) /out:$(LIBNAME)$(_LIB) $(OBJS)
 
 $(TARGETDLL):
 	!$(MAKE) -f makefile.mvc CFLAGS="$(CFLAGS) $(CFLAGS_DLL)" $(OBJS)
-	$(LINK) $(LFLAGS_DLL) /out:$(TARGETDLL) $(OBJS) $(LIBS)
+	@$(LINK) $(LFLAGS_DLL) /out:$(TARGETDLL) $(OBJS) $(LIBS)
+
+checktpl:
+	@$(CC) $(CFLAGS) $(CINCL) $(CDEFS) $(EXENAMEFLAG)checktpl.exe $(COPT) $(_SRC_DIR)checktpl.c $(LFLAGS) $(LIBS) $(TARGETLIB)
+
+checktpldll:
+	@$(CC) $(CFLAGS) $(CFLAGS_DLL) $(CINCL) $(CDEFS) $(EXENAMEFLAG)checktpl.exe $(COPT) $(_SRC_DIR)checktpl.c $(LFLAGS) $(LIBS) $(TARGETLIB)
 
 clean:
 	-$(RM) $(RMOPT) *$(_OBJ)
+	-$(RM) $(RMOPT) *$(_ILK)
+	-$(RM) $(RMOPT) *$(_PDB)
 
 distclean: clean
 	-$(RM) $(RMOPT) $(TARGETLIB)
 	-$(RM) $(RMOPT) $(TARGETDLL)
 	-$(RM) $(RMOPT) *$(_EXP)
+	-$(RM) $(RMOPT) *$(_EXE)

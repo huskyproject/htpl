@@ -12,7 +12,7 @@ section *findSection(template *tpl, char *name);
 void addLine(section *s, char *text, int lineNo);
 int addSection(template *tpl);
 section *newSection(char *file, char *name);
-void deleteSections(template *tpl);
+void deleteAllSections(template *tpl);
 
 #ifdef __cplusplus
 }

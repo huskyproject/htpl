@@ -8,6 +8,7 @@
 #include "htpl.h"
 #include "sections.h"
 
+extern char htplError[HTPLERRORSIZE];
 
 sectionLine *newLine()
 {
@@ -16,8 +17,26 @@ sectionLine *newLine()
     return l;
 }
 
+void addLine(section *s, char *text, int lineNo)
+{
+    sectionLine *tmp;
+    sectionLine *l = newLine();
+
+    l->text = sstrdup(text);
+    l->lineNo = lineNo;
+    if (!s->firstLine)
+        s->firstLine = l;
+    else
+    {
+        tmp = s->firstLine;
+        while (tmp->next) tmp = tmp->next;
+        tmp->next = l;
+    }
+}
+
 void deleteLine(sectionLine *l)
 {
+    if (!l) return;
     nfree(l->text);
     nfree(l);
 }
@@ -28,52 +47,22 @@ section *newSection(char *file, char *name)
     s = (section *) scalloc(sizeof(section), 1);
     s->file = sstrdup(file);
     s->name = sstrdup(name);
+    s->iflevel = -1;
+    s->condition = 1;
     return s;
-}
-
-void deleteSection(section *s)
-{
-    sectionLine *linetmp;
-    nfree(s->name);
-    nfree(s->file);
-    if (s->firstLine)
-        s->line = s->firstLine;
-    else return;
-    while(s->line->next) {
-        linetmp = s->line->next;
-        deleteLine(s->line);
-        s->line = linetmp;
-    }
-    deleteLine(s->line);
-    nfree(s);
 }
 
 section *findSection(template *tpl, char *name)
 {
     section *s;
+
     if (!tpl->firstSection) return NULL;
     s = tpl->firstSection;
-    while((s) && (s->name) && (strcmp(s->name, name)))
+    while ((s) && (s->name)) {
+        if (strcmp(s->name, name) == 0) return s;
         s = s->next;
-    if ((s == NULL) || (s->name == NULL))
-        return NULL;
-    else
-        return s;
-}
-
-void addLine(section *s, char *text, int lineNo)
-{
-    sectionLine *l = newLine();
-    l->text = sstrdup(text);
-    l->lineNo = lineNo;
-    if (!s->firstLine)
-        s->firstLine = l;
-    else
-    {
-        s->line = s->firstLine;
-        while(s->line->next) s->line = s->line->next;
-        s->line->next = l;
     }
+    return NULL;
 }
 
 int addSection(template *tpl)
@@ -93,23 +82,45 @@ int addSection(template *tpl)
     return 1;
 }
 
-void deleteSections(template *tpl)
+void deleteSection(section *s)
 {
-    section *s, *stmp;
-    if (!tpl->firstSection) return;
-    s = tpl->firstSection;
-    while(s->next) {
-        stmp = (section *)s->next;
-        deleteSection(s);
-        s = (section *)stmp;
+    sectionLine *tmp, *line;
+
+    if (!s) return;
+    nfree(s->name);
+    nfree(s->file);
+    nfree(s->ifstack);
+    line = s->firstLine;
+    while (line) {
+        tmp = line->next;
+        deleteLine(line);
+        line = tmp;
     }
-    deleteSection(s);
+    nfree(s);
 }
 
-void deleteTemplate(template *tpl)
+void deleteAllSections(template *tpl)
 {
-    if (tpl->firstSection) deleteSections(tpl);
-    if (tpl->firstVariable) unregisterVariables(tpl);
-    nfree(tpl->htplError);
+    section *s, *stmp;
+
+    if (!tpl->firstSection) return;
+    s = tpl->firstSection;
+    while (s) {
+        stmp = s->next;
+        deleteSection(s);
+        s = stmp;
+    }
+}
+
+int deleteTemplate(template *tpl)
+{
+    if (!tpl) {
+        sprintf(htplError, "Error: template structure should be defined!");
+        return 0;
+    }
+
+    if (tpl->firstSection) deleteAllSections(tpl);
+    if (tpl->firstVariable) unregisterAllVariables(tpl);
     nfree(tpl);
+    return 1;
 }

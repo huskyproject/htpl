@@ -14,6 +14,7 @@
 #include "sections.h"
 #include "varlist.h"
 #include "format.h"
+#include "strutil.h"
 
 char htplError[HTPLERRORSIZE];
 
@@ -27,7 +28,7 @@ void makeErrorHeader(char *msg,...)
     va_start(args, msg);
     vsprintf(params, msg, args);
     va_end(args);
-    s = (char *) sstrdup(htplError);
+    s = sstrdup(htplError);
     sprintf(htplError, "%s%s", params, s);
 }
 
@@ -35,21 +36,73 @@ template *newTemplate()
 {
     template *tpl = NULL;
     tpl = (template *) scalloc(sizeof(template), 1);
+    tpl->currentSection = NULL;
+    tpl->firstSection = NULL;
+    tpl->firstVariable = NULL;
     return tpl;
 }
 
-void getValue(template *tpl, char *name, void **result)
+void getValue(template *tpl, char *name, char **result)
 {
     variable *v;
+    char *buff;
     nfree(*result);
 
-    if ((v = findVariable(tpl, name)) == NULL)
-        xscatprintf((char **)result, "@%s@", name);
-    else
+    if ((v = findVariable(tpl, name)) == NULL) {
+        if ((buff = getenv(name)) != NULL)
+            xstrcat(result, buff);
+        else
+            *result = sstrdup("");
+    } else
         switch (v->type) {
-            case T_STRING: xstrcat((char **)result, *((char **)v->value) ? *((char **)v->value) : ""); break;
-            case T_INT: xscatprintf((char **)result, "%d", *((int *)v->value)); break;
+            case T_STRING: xstrcat(result, *((char **)v->value) ? *((char **)v->value) : ""); break;
+            case T_INT: xscatprintf(result, "%d", *((int *)v->value)); break;
         }
+}
+
+short boolExpression(char *str)
+{
+  char *p, *p1, *p2;
+  short ret, inquote, relax;
+
+  ret=1;
+  for (p=str; isspace(*p); p++);
+  if (strncasecmp(p, "not ", 4)==0)
+  {
+    ret=0;
+    for (p+=4; isspace(*p); p++);
+  }
+  inquote=0;
+  for (p1=p; *p1; p1++)
+  {
+    if (p1[0]=='\\' && (p1[1]=='\\' || p1[1]=='\"'))
+    {
+      p1++;
+      continue;
+    }
+    if (*p1=='\"')
+    {
+      inquote = !inquote;
+      continue;
+    }
+    if (!inquote)
+      if ((p1[0] == '=' || p1[0] == '!') && (p1[1] == '=' || p1[1] == '~'))
+        break;
+  }
+  if (*p1==0)
+  {
+/*    sprintf(htplError, "Error %s", str);  */
+    return ret;
+  }
+  if (p1[0]=='!') ret=!ret;
+  relax=(p1[1]=='~');
+  *p1=0;
+  for (p2=p1-1; isspace(*p2); *p2--=0);
+  for (p1+=2; isspace(*p1); p1++);
+  for (p2=p1+sstrlen(p1)-1; isspace(*p2); *p2--=0);
+  if (relax ? patimat(p, p1) : sstricmp(p, p1))
+    ret=!ret;
+  return ret;
 }
 
 int expandMacro(template *tpl, char **macro)
@@ -59,23 +112,25 @@ int expandMacro(template *tpl, char **macro)
     char *fmt_ptr = NULL;
     char *format = NULL;
     char *lbl = NULL; // label of variable
-    format_t f = { A_LEFT, 0, NULL };
-    unsigned int rc = 1;
+    format_t f;
 
-    if ((fmt_ptr = (char *) strchr(*macro, '%')) != NULL)
+    if ((fmt_ptr = strchr(*macro, '%')) != NULL)
     {
-        format = (char *) sstrdup(fmt_ptr+1);
-
-        if (!parseVarFormat(&f, format, strlen(*macro)+2)) // +2 because of 2 '@'
-            rc = 0;  /* report an error in htpl_parseLine() test mode */
+        format = sstrdup(fmt_ptr+1);
+        if (!parseVarFormat(&f, format, strlen(*macro)+2)) { // +2 because of 2 '@'
+            sprintf(htplError, "\"%s\" : invalid format", format);
+            nfree(*macro);
+            *macro = sstrdup("");
+            return 0;
+        }
 
         lbl = (char *) scalloc(fmt_ptr - (*macro) + 1, 1);
         strncpy(lbl, *macro, (fmt_ptr - (*macro)));
     }
     else
-        lbl = (char *) sstrdup(*macro);
+        lbl = sstrdup(*macro);
 
-    getValue(tpl, lbl, (void **)&buf);
+    getValue(tpl, lbl, &buf);
     nfree(lbl);
 
     if (fmt_ptr)
@@ -83,19 +138,10 @@ int expandMacro(template *tpl, char **macro)
     else
         xstrcpy(macro, buf);
 
-    return rc;
+    return 1;
 }
 
-/*
-   if test mode is off no error messages would be generated, assume template
-   is already checked, corrected and is ok now
-
-   normally test mode is used in parseTemplate() to catch all errors and
-   warnings and stop template processing to let user fix errors in template;
-   when executing parseSection() test mode is off, errors are silently
-   ignored to ensure program will not be confused by them
-*/
-int htpl_parseLine(template *tpl, char *line, char **output, int test_mode)
+int expandLine(template *tpl, char *line, char **output)
 {
     int i, escape=0;
     char *ptr;
@@ -103,10 +149,10 @@ int htpl_parseLine(template *tpl, char *line, char **output, int test_mode)
     char *fmtStart=NULL;
     char *macro=NULL;
     char *strformat=NULL;
-    format_t fmt = { A_LEFT, 0, NULL };
     int format_flag=0;
+    format_t fmt;
 
-    if ((i=strlen(line))==0) return -1;
+    i = strlen(line);
 
     nfree(*output);
     *output = (char *)scalloc(i+1, 1);
@@ -126,10 +172,9 @@ int htpl_parseLine(template *tpl, char *line, char **output, int test_mode)
                 {
                     macro = (char *) scalloc(line-macStart+1, 1);
                     strncpy(macro, macStart+1, line-macStart - 1);
-                    if (!expandMacro(tpl, &macro) && test_mode) {
-                        sprintf(htplError, "Error parsing macro format");
+                    if (!expandMacro(tpl, &macro)) {
                         nfree(macro);
-                        return 0;  /* report error in test mode */
+                        return 0;
                     }
                     xstrcat(output, macro);
                     nfree(macro);
@@ -144,10 +189,9 @@ int htpl_parseLine(template *tpl, char *line, char **output, int test_mode)
                 else {
                     strformat = (char *) scalloc(line-fmtStart+1, 1);
                     strncpy(strformat, fmtStart+1, line-fmtStart - 1);
-                    if (!parseStrFormat(&fmt, strformat) && test_mode) {
-                        sprintf(htplError, "Error parsing string format");
+                    if (!parseStrFormat(&fmt, strformat)) {
                         nfree(strformat);
-                        return 0;  /* report error in test mode */
+                        return 0;
                     }
                     nfree(strformat);
                     format_flag = 1;
@@ -165,22 +209,22 @@ int htpl_parseLine(template *tpl, char *line, char **output, int test_mode)
         }
     }
     *ptr = '\0';
-    if (macStart && test_mode) {
+    if (macStart) {
         sprintf(htplError, "Unbalanced @ operator");
         return 0;
     }
-    if (fmtStart && test_mode) {
+    if (fmtStart) {
         sprintf(htplError, "Unbalanced % operator");
         return 0;
     }
 
     if (format_flag) {
-        strformat = (char *) sstrdup(*output);
+        strformat = sstrdup(*output);
         strFormat(output, &fmt, strformat);
         nfree(strformat);
     }
     if (!*output)
-        *output = (char *) sstrdup("");
+        *output = sstrdup("");
 
     return 1;
 }
@@ -188,19 +232,29 @@ int htpl_parseLine(template *tpl, char *line, char **output, int test_mode)
 int htpl_readLine(template *tpl, char *file, char *line, int lineNo)
 {
     char *out = NULL;
+    int rc = 1;
 
-    if (*line == '#')
-        return parseDirective(tpl, file, line+1);
-    else if (tpl->currentSection) {
+    line = stripn(line);
+
+    if (*line == '#') {
+        rc = parseDirective(tpl, file, line);
+        if (rc == 2) {
+            addLine(tpl->currentSection, line, lineNo);
+            if (!expandLine(tpl, line, &out)) {
+                nfree(out);
+                return 0;
+            } else nfree(out);
+        }
+    } else if (tpl->currentSection) {
         addLine(tpl->currentSection, line, lineNo);
-        if (!htpl_parseLine(tpl, line, &out, 1)) { /* parse line in test mode */
+        if (!expandLine(tpl, line, &out)) {
             nfree(out);
             return 0;
         } else nfree(out);
     }
     /* or quietly skip the line if out of section */
 
-    return 1;
+    return rc;
 }
 
 int parseTemplate(template *tpl, char *file)
@@ -210,10 +264,19 @@ int parseTemplate(template *tpl, char *file)
     char *line=NULL;
     int lineNo=0;
 
+    if (!tpl) {
+        sprintf(htplError, "Error: template structure should be defined!");
+        return 0;
+    }
+    if (!file || strlen(file) == 0) {
+        sprintf(htplError, "Error: template filename should be defined!");
+        return 0;
+    }
+
     line = (char *) scalloc(MAXPATHLEN, 1);
     f = fopen(file, "rt");
     if (!f) {
-        sprintf(htplError, "Can't open file %s: %d", file, errno);
+        sprintf(htplError, "Can't open file %s: %s", file, strerror(errno));
         return 0;
     }
 
@@ -244,20 +307,50 @@ int parseTemplate(template *tpl, char *file)
     return 1;
 }
 
-void parseSection(template *tpl, char *name, char **output)
+int parseSection(template *tpl, char *name, char **output)
 {
-    char *buff=NULL;
+    char *buff = NULL;
     section *s;
+    sectionLine *line;
 
-    if ((s = findSection(tpl, name)) == NULL) return; /* section not found */
-    if (!s->firstLine) return; /* section contains no lines */
-
-    s->line = s->firstLine;
-    while(s->line->next) {
-        htpl_parseLine(tpl, s->line->text, &buff, 0);
-        xstrcat(output, buff);
-        s->line = s->line->next;
+    if (!tpl) {
+        sprintf(htplError, "Error: template structure should be defined!");
+        return 0;
     }
-    htpl_parseLine(tpl, s->line->text, &buff, 0);
-    xstrcat(output, buff);
+    if (!name || strlen(name) == 0) {
+        sprintf(htplError, "Error: section name should be defined!");
+        return 0;
+    }
+    if (!output) {
+        sprintf(htplError, "Error: output buffer should be defined!");
+        return 0;
+    }
+
+    /* these are not errors! */
+    if ((s = findSection(tpl, name)) == NULL) return 1; /* section not found */
+    if (!s->firstLine) return 1; /* section contains no lines */
+
+    /* for parsing #if,#else,... directives  */
+    tpl->currentSection = s;
+    s->iflevel = -1;
+    s->condition = 1;
+
+    line = s->firstLine;
+    while (line) {
+        if (*(line->text) == '#') {
+            if (!parseDirective(tpl, s->file, line->text)) {
+                makeErrorHeader("Error at %s:%d - ", s->file, line->lineNo);
+                return 0;
+            }
+        } else if (s->condition) {
+            if (!expandLine(tpl, line->text, &buff)) {
+                makeErrorHeader("Error at %s:%d - ", s->file, line->lineNo);
+                nfree(buff);
+                return 0;
+            }
+            xstrscat(output, buff, "\r", NULL);
+        }
+        line = line->next;
+    }
+    return 1;
 }

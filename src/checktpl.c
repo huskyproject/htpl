@@ -3,6 +3,10 @@
  *
  */
 #include <stdio.h>
+
+#define DLLIMPORT
+#include <huskylib/huskyext.h>
+
 #include "htpl.h"
 
 int main(int argc, char **argv)

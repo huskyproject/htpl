@@ -30,9 +30,18 @@ char *htpl_trimLine(char *line)
 
 char *stripn(char *line)
 {
+    unsigned len;
+
     if (line == NULL) return NULL;
-    if (strlen(line) < 1) return line;
-    if (line[strlen(line)-1] == '\n') line[strlen(line)-1] = '\0';
+    len = strlen(line);
+    if (len == 0) return line;
+    len--;
+    if (line[len] == '\n') {
+        line[len] = '\0';
+        len--;
+        if (line[len] == '\r')
+            line[len] = '\0';
+    }
     return line;
 }
 

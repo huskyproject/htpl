@@ -136,9 +136,9 @@ int parseStrFormat(format_t *format, char *formatstr)
             formatstr++;
             i_off++;
         }
-        format->pattern = (char *) sstrdup(intstr);
+        format->pattern = sstrdup(intstr);
     } else
-        format->pattern = (char *) sstrdup(" ");
+        format->pattern = sstrdup(" ");
 
     return 1;
 }
@@ -168,12 +168,12 @@ char *strFormat(char **output, format_t *format, char *str)
             strncpy(chunk[chunkcount-1], str, patternpos - str);
             chunk[chunkcount-1][patternpos - str] = '\0';
         } else
-            chunk[chunkcount-1] = (char *) sstrdup("");
+            chunk[chunkcount-1] = sstrdup("");
         str = patternpos + strlen("{}");
         chunkslen += strlen(chunk[chunkcount-1]);
     }
     chunkcount++;
-    chunk[chunkcount-1] = (char *) sstrdup(str);
+    chunk[chunkcount-1] = sstrdup(str);
     chunkslen += strlen(chunk[chunkcount-1]);
 
     if (chunkcount > 1)
