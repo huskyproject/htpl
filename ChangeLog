@@ -1,3 +1,9 @@
+2004-01-31 Saturday 10:39  andrew_ladutsko
+
+	* test.c (1.3), htpl/htpl.h (1.3), src/parse.c (1.5): now all
+	checks are done in parseTemplate(); quietly ignore all errors in
+	parseSection()
+
 2004-01-30 Friday 16:11  andrew_ladutsko
 
 	* test.c (1.2), doc/FORMAT.draft (1.2), htpl/htpl.h (1.2),
