@@ -87,6 +87,12 @@
 	* htpl/: format.h (1.1), htpl.h (1.1), sections.h (1.1), strutil.h
 	(1.1), token.h (1.1), varlist.h (1.1): renaming *.h
 
+2004-01-27 Tuesday 09:07  andrew_ladutsko
+
+	* h/: format.h (1.2), htpl.h (1.2), mem.h (1.2), sections.h (1.2),
+	strutil.h (1.2), token.h (1.2), varlist.h (1.2), xstr.h (1.2):
+	renaming *.h
+
 2003-01-15 Wednesday 06:00  stas_degteff
 
 	* src/xstr.c (1.2): Update defines (changed in smapi/compiler.h)
@@ -98,8 +104,10 @@
 2002-07-27 Saturday 13:19  d.sergienko
 
 	* Makefile (1.1), TODO (1.1), test.c (1.1), test.out (1.1),
-	test.tpl (1.1), doc/FORMAT.draft (1.1), src/format.c (1.1),
-	src/mem.c (1.1), src/parse.c (1.1), src/sections.c (1.1),
+	test.tpl (1.1), h/mem.h (1.1), h/sections.h (1.1), doc/FORMAT.draft
+	(1.1), h/format.h (1.1), h/htpl.h (1.1), h/strutil.h (1.1),
+	h/token.h (1.1), h/varlist.h (1.1), h/xstr.h (1.1), src/format.c
+	(1.1), src/mem.c (1.1), src/parse.c (1.1), src/sections.c (1.1),
 	src/strutil.c (1.1), src/token.c (1.1), src/varlist.c (1.1),
 	src/xstr.c (1.1): Initial revision
 
