@@ -66,13 +66,8 @@ short boolExpression(char *str)
   short ret, inquote, relax;
 
   ret=1;
-  for (p=str; isspace(*p); p++);
-  if (strncasecmp(p, "not ", 4)==0)
-  {
-    ret=0;
-    for (p+=4; isspace(*p); p++);
-  }
   inquote=0;
+  for (p=str; isspace(*p); p++);
   for (p1=p; *p1; p1++)
   {
     if (p1[0]=='\\' && (p1[1]=='\\' || p1[1]=='\"'))
@@ -91,8 +86,8 @@ short boolExpression(char *str)
   }
   if (*p1==0)
   {
-/*    sprintf(htplError, "Error %s", str);  */
-    return ret;
+    sprintf(htplError, "Error in expression %s: no command found", str);
+    return -1;
   }
   if (p1[0]=='!') ret=!ret;
   relax=(p1[1]=='~');

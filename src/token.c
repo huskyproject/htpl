@@ -59,7 +59,7 @@ int parseDirective(template *tpl, char *file, char *orig_line)  // extracts toke
 {
     char *line, *buff;
     char token_label[256];
-    int token_id, i;
+    int token_id, i, ret;
     section *s;
 
     if (orig_line==NULL || strlen(orig_line)<=1)
@@ -119,7 +119,8 @@ int parseDirective(template *tpl, char *file, char *orig_line)  // extracts toke
         if (s->iflevel == s->maxif)
           s->ifstack = srealloc(s->ifstack, (s->maxif+=10)*sizeof(ifstack));
         s->ifstack[s->iflevel].inelse = 0;
-        s->ifstack[s->iflevel].state = boolExpression(buff);
+        if ((ret = boolExpression(buff)) == -1) return 0;  /* error */
+        s->ifstack[s->iflevel].state = ret;
         s->condition = s->ifstack[s->iflevel].state;
         nfree(buff);
         return 2;
@@ -138,8 +139,10 @@ int parseDirective(template *tpl, char *file, char *orig_line)  // extracts toke
         expandLine(tpl, line, &buff);
         if (s->ifstack[s->iflevel].state)
           s->ifstack[s->iflevel].state = 0;
-        else
-          s->ifstack[s->iflevel].state = boolExpression(buff);
+        else {
+          if ((ret = boolExpression(buff)) == -1) return 0;  /* error */
+          s->ifstack[s->iflevel].state = ret;
+        }
         s->condition = s->ifstack[s->iflevel].state;
         nfree(buff);
         return 2;
