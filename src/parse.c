@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
-//#include <sys/param.h> //al: what is this?
 
 #include <huskylib/compiler.h>
 #include <huskylib/huskylib.h>
