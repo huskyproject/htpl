@@ -2,13 +2,6 @@
 #include <malloc.h>
 #include "htpl/htpl.h"
 
-void printSection(template *tpl, char *name, char **report)
-{
-    if (!parseSection(tpl, name, report)) {
-        printf("Warning: %s\n", htplError);
-    }
-}
-
 int main()
 {
     char *report=NULL;
@@ -29,14 +22,14 @@ int main()
     } else
     {
         /* print parsed section "header" into buffer "report" */
-        printSection(tpl, "header", &report);
+        parseSection(tpl, "header", &report);
 
         for (a=0; a < 10; a++)
-            printSection(tpl, "a_line", &report);
+            parseSection(tpl, "a_line", &report);
 
-        printSection(tpl, "head1", &report);
+        parseSection(tpl, "head1", &report);
 
-        printSection(tpl, "footer", &report);
+        parseSection(tpl, "footer", &report);
 
         printf("%s", report);
     }

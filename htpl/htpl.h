@@ -55,7 +55,7 @@ HUSKYEXT template *newTemplate();
 HUSKYEXT int parseTemplate(template *tpl, char *file);
 
 /* parses section's lines and prints output into buffer */
-HUSKYEXT int parseSection(template *tpl, char *name, char **output);
+HUSKYEXT void parseSection(template *tpl, char *name, char **output);
 
 /* add variable to list */
 HUSKYEXT int registerVariable(template *tpl, char *label, void **value, int type);
