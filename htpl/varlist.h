@@ -8,12 +8,9 @@ extern "C" {
 #include <huskylib/compiler.h>
 #include <huskylib/huskylib.h>
 
-typedef struct {
-    char *label;
-    void **value;
-    int type;
-    void *next;
-} variable;
+variable *newVariable();
+variable *findVariable(template *tpl, char *label);
+void deleteVariable(variable *v);
 
 #ifdef __cplusplus
 }

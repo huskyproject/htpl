@@ -50,7 +50,14 @@ void makeErrorHeader(char *msg,...)
     sprintf(htplError, "%s%s", params, s);
 }
 
-int getValue(char *name, void **result)
+template *newTemplate()
+{
+    template *tpl = NULL;
+    tpl = (template *) scalloc(sizeof(template), 1);
+    return tpl;
+}
+
+int getValue(template *tpl, char *name, void **result)
 {
     variable *v;
     nfree(*result);
@@ -67,16 +74,15 @@ int getValue(char *name, void **result)
 
     return 1;
 */
-    v = (variable *) findVariable(name);
-    if (!v) return 0;
+    if ((v = findVariable(tpl, name)) == NULL) return 0;
     switch (v->type) {
-    case T_STRING: xstrcat((char **)result, *((char **)v->value)); break;
-    case T_INT: xscatprintf((char **)result, "%d", *((int *)v->value)); break;
+        case T_STRING: xstrcat((char **)result, *((char **)v->value) ? *((char **)v->value) : ""); break;
+        case T_INT: xscatprintf((char **)result, "%d", *((int *)v->value)); break;
     }
     return 1;
 }
 
-int expandMacro(char **macro)
+int expandMacro(template *tpl, char **macro)
 {
     char *buf=NULL;
     char *label=NULL;
@@ -99,7 +105,7 @@ int expandMacro(char **macro)
     } else
         lbl = (char *) sstrdup(*macro);
 
-    if (!getValue(lbl, (void **)&buf)) {
+    if (!getValue(tpl, lbl, (void **)&buf)) {
         sprintf(htplError, "\"%s\" is an unknown variable", lbl);
         nfree(lbl);
         nfree(*macro);
@@ -114,7 +120,7 @@ int expandMacro(char **macro)
     return 1;
 }
 
-int htpl_parseLine(char *line, char **output)
+int htpl_parseLine(template *tpl, char *line, char **output)
 {
     int i, escape=0;
     char *ptr;
@@ -145,7 +151,7 @@ int htpl_parseLine(char *line, char **output)
                 {
                     macro = (char *) scalloc(line-macStart+1, 1);
                     strncpy(macro, macStart+1, line-macStart - 1);
-                    if (!expandMacro(&macro)) {
+                    if (!expandMacro(tpl, &macro)) {
                         nfree(macro);
                         return 0;
                     }
@@ -202,17 +208,18 @@ int htpl_parseLine(char *line, char **output)
     return 1;
 }
 
-int htpl_readLine(char *line, char *file, int lineNo)
+int htpl_readLine(template *tpl, char *file, char *line, int lineNo)
 {
     if (*line == '#')
-        return parseDirective(line+1);
-    else
-        addLine(currentSection, line, file, lineNo);
+        return parseDirective(tpl, file, line+1);
+    else if (tpl->currentSection)
+        addLine(tpl->currentSection, line, lineNo);
+    /* or quietly skip the line if out of section */
 
     return 1;
 }
 
-int parseTemplate(char *filename)
+int parseTemplate(template *tpl, char *file)
 {
     FILE *f;
     char *val=NULL;
@@ -220,19 +227,16 @@ int parseTemplate(char *filename)
     int lineNo=0;
 
     line = (char *) scalloc(MAXPATHLEN, 1);
-    f = fopen(filename, "rt");
-    if (isError((void *)f, "Can't open file %s: %d", filename, errno))
+    f = fopen(file, "rt");
+    if (isError((void *)f, "Can't open file %s: %d", file, errno))
         return 0;
-
-    if (!currentSection)
-        addSection(filename);
 
     while(fgets(line, MAXPATHLEN, f))
     {
         lineNo++;
-        if (!htpl_readLine(line, filename, lineNo))
+        if (!htpl_readLine(tpl, file, line, lineNo))
         {
-            makeErrorHeader("Error at %s:%d - ", filename, lineNo);
+            makeErrorHeader("Error at %s:%d - ", file, lineNo);
             nfree(line);
             fclose(f);
             return 0;
@@ -241,30 +245,40 @@ int parseTemplate(char *filename)
 
     nfree(line);
     fclose(f);
+
+    if (tpl->currentSection)  /* section was not closed by #endsection */
+    {
+        sprintf(htplError, "Section \"%s\" was not closed by #endsection directive till end of file %s",
+            tpl->currentSection->name, file);
+        makeErrorHeader("Error at %s:%d - ", file, lineNo);
+        deleteSection(tpl->currentSection);
+        return 0;
+    }
+
     return 1;
 }
 
-int parseSection(char *name, char **output)
+int parseSection(template *tpl, char *name, char **output)
 {
     char *buff=NULL;
     section *s;
 
-    s = findSection(name);
+    s = findSection(tpl, name);
     if(isError((void *)s, "section %s not found", name))
         return 0;
     if (!s->firstLine) return 0;
 
     s->line = s->firstLine;
     while(s->line->next) {
-        if (htpl_parseLine(s->line->text, &buff))
+        if (htpl_parseLine(tpl, s->line->text, &buff))
             xstrcat(output, buff);
         else {
-            makeErrorHeader("Error at %s:%d - ", s->line->file, s->line->lineNo);
+            makeErrorHeader("Error at %s:%d - ", s->file, s->line->lineNo);
             return 0;
         }
         s->line = s->line->next;
     }
-    if (htpl_parseLine(s->line->text, &buff))
+    if (htpl_parseLine(tpl, s->line->text, &buff))
         xstrcat(output, buff);
     else
         return 0;

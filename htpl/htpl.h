@@ -19,30 +19,55 @@ enum {
     T_INT
 };
 
+typedef struct s_line {
+    char *text;
+    int lineNo;
+    struct s_line *next;
+} sectionLine;
+
+typedef struct s_section {
+    char *name;
+    char *file;
+    sectionLine *firstLine;
+    sectionLine *line;
+    struct s_section *next;
+} section;
+
+typedef struct s_variable {
+    char *label;
+    void **value;
+    int type;
+    struct s_variable *next;
+} variable;
+
+typedef struct s_template {
+    section *firstSection;
+    section *currentSection;
+    variable *firstVariable;
+    char *htplError;
+} template;
+
+
+/* makes a new template */
+HUSKYEXT template *newTemplate();
 
 /* reads template and make a structure of sections */
-HUSKYEXT int parseTemplate(char *filename);
-
-/* Callback function. Returns value by name. Each program wich uses libhtpl
-   *must* have this function. */
-HUSKYEXT int getValue(char *name, void **result);
-
-/* Error handler (like assert() but it prints error into buffer htplError) */
-HUSKYEXT int isError(char *var, char *msg,...);
+HUSKYEXT int parseTemplate(template *tpl, char *file);
 
 /* parses section's lines and prints output into buffer */
-HUSKYEXT int parseSection(char *name, char **output);
+HUSKYEXT int parseSection(template *tpl, char *name, char **output);
 
 /* add variable to list */
-HUSKYEXT int registerVariable(char *label, void **value, int type);
+HUSKYEXT int registerVariable(template *tpl, char *label, void **value, int type);
 
 /* removes variable from list */
-HUSKYEXT void unregisterVariable(char *name);
+HUSKYEXT void unregisterVariable(template *tpl, char *name);
 
 /* removes all variables from list */
-HUSKYEXT void unregisterAllVars();
+HUSKYEXT void unregisterVariables(template *tpl);
 
-HUSKYEXT void deleteSections();
+/* removes the template */
+HUSKYEXT void deleteTemplate(template *tpl);
 
 #ifdef __cplusplus
 }

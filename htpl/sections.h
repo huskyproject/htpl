@@ -8,27 +8,11 @@ extern "C" {
 #include <huskylib/compiler.h>
 #include <huskylib/huskylib.h>
 
-typedef struct {
-    char *text;
-    char *file;
-    int lineNo;
-    void *next;
-} sectionLine;
-
-typedef struct {
-    char *name;
-    sectionLine *firstLine;
-    sectionLine *line;
-    void *next;
-    void *prev;
-} section;
-
-extern section *currentSection;
-
-section *findSection(char *name);
-void addLine(section *s, char *text, char *file, int lineNo);
-int addSection(char *name);
-HUSKYEXT void deleteSections();
+section *findSection(template *tpl, char *name);
+void addLine(section *s, char *text, int lineNo);
+int addSection(template *tpl);
+section *newSection(char *file, char *name);
+void deleteSections(template *tpl);
 
 #ifdef __cplusplus
 }

@@ -12,6 +12,10 @@ Parser directives:
 #section <name>
 #endsection
 
+Each section (beginning with #section and ending with #endsection) should be
+located in one file: it cannot begin in one file and end in another included
+file.
+
 Formatting:
 There is two methods of formatting:
 1) formatting variables

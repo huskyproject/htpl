@@ -5,18 +5,8 @@
 #define DLLEXPORT
 #include <huskylib/huskyext.h>
 
-#include "sections.h"
 #include "htpl.h"
-
-typedef struct
-{
-    section *s;
-    void *up;
-} s_stack;
-
-s_stack *section_stack=NULL;
-section *firstSection=NULL;
-section *currentSection=NULL;
+#include "sections.h"
 
 
 sectionLine *newLine()
@@ -29,37 +19,15 @@ sectionLine *newLine()
 void deleteLine(sectionLine *l)
 {
     nfree(l->text);
-    nfree(l->file);
     nfree(l);
 }
 
-void pushSection(section *s)
-{
-    s_stack *ss;
-
-    currentSection = s;
-    ss = (s_stack *) scalloc(sizeof(s_stack), 1);
-    ss->s = currentSection;
-    ss->up = section_stack;
-    section_stack = ss;
-}
-
-void popSection()
-{
-    s_stack *ss;
-
-    if (!section_stack) return;
-    ss = section_stack;
-    section_stack = section_stack->up;
-    currentSection = section_stack->s;
-    nfree(ss);
-}
-
-
-section *newSection()
+section *newSection(char *file, char *name)
 {
     section *s;
     s = (section *) scalloc(sizeof(section), 1);
+    s->file = sstrdup(file);
+    s->name = sstrdup(name);
     return s;
 }
 
@@ -67,6 +35,7 @@ void deleteSection(section *s)
 {
     sectionLine *linetmp;
     nfree(s->name);
+    nfree(s->file);
     if (s->firstLine)
         s->line = s->firstLine;
     else return;
@@ -79,11 +48,11 @@ void deleteSection(section *s)
     nfree(s);
 }
 
-section *findSection(char *name)
+section *findSection(template *tpl, char *name)
 {
     section *s;
-    if (!firstSection) return NULL;
-    s = firstSection;
+    if (!tpl->firstSection) return NULL;
+    s = tpl->firstSection;
     while((s) && (s->name) && (strcmp(s->name, name)))
         s = s->next;
     if ((s == NULL) || (s->name == NULL))
@@ -92,11 +61,10 @@ section *findSection(char *name)
         return s;
 }
 
-void addLine(section *s, char *text, char *file, int lineNo)
+void addLine(section *s, char *text, int lineNo)
 {
     sectionLine *l = newLine();
-    l->text = (char *) sstrdup(text);
-    l->file = (char *) sstrdup(file);
+    l->text = sstrdup(text);
     l->lineNo = lineNo;
     if (!s->firstLine)
         s->firstLine = l;
@@ -108,38 +76,40 @@ void addLine(section *s, char *text, char *file, int lineNo)
     }
 }
 
-int addSection(char *name)
+int addSection(template *tpl)
 {
-    section *s, *stmp;
-    if ((s=findSection(name))!=NULL) {
-        sprintf(htplError, "section \"%s\" has already been defined", name);
-        return 0;
-    } else
-        s = newSection();
-    s->name = sstrdup(name);
-    if (!firstSection)
-        firstSection = s;
+    section *s;
+
+    if (!tpl->firstSection)
+        tpl->firstSection = tpl->currentSection;
     else
     {
-        stmp = firstSection;
-        while(stmp->next) stmp = stmp->next;
-        stmp->next = s;
-        s->prev = stmp;
+        s = tpl->firstSection;
+        while(s->next) s = s->next;
+        s->next = tpl->currentSection;
     }
-    pushSection(s);
+    tpl->currentSection = NULL;
 
     return 1;
 }
 
-void deleteSections()
+void deleteSections(template *tpl)
 {
     section *s, *stmp;
-    if (!firstSection) return;
-    s = firstSection;
+    if (!tpl->firstSection) return;
+    s = tpl->firstSection;
     while(s->next) {
         stmp = (section *)s->next;
         deleteSection(s);
         s = (section *)stmp;
     }
     deleteSection(s);
+}
+
+void deleteTemplate(template *tpl)
+{
+    if (tpl->firstSection) deleteSections(tpl);
+    if (tpl->firstVariable) unregisterVariables(tpl);
+    nfree(tpl->htplError);
+    nfree(tpl);
 }

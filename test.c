@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <malloc.h>
-#include "htpl.h"
+#include "htpl/htpl.h"
 
-void printSection(char *name, char **report)
+void printSection(template *tpl, char *name, char **report)
 {
-    if (!parseSection(name, report)) {
+    if (!parseSection(tpl, name, report)) {
         printf("Warning: %s\n", htplError);
     }
 }
@@ -14,30 +14,36 @@ int main()
     char *report=NULL;
     char *timestr=NULL;
     int a=0;
+    template *tpl;
 
-    /* registering our variables for report */
-    registerVariable("time", (void **) &timestr, T_STRING);
-    registerVariable("a", (void **) &a, T_INT);
+    /* create new template */
+    tpl = newTemplate();
+
+    /* register our variables for report */
+    registerVariable(tpl, "time", (void **) &timestr, T_STRING);
+    registerVariable(tpl, "a", (void **) &a, T_INT);
 
     /* parse template file */
-    if (!parseTemplate("test.tpl")) {
+    if (!parseTemplate(tpl, "test.tpl")) {
         printf("%s\n", htplError);
     } else
     {
         /* print parsed section "header" into buffer "report" */
-        printSection("header", &report);
+        printSection(tpl, "header", &report);
 
         for (a=0; a < 10; a++)
-            printSection("a_line", &report);
+            printSection(tpl, "a_line", &report);
 
-        printSection("head1", &report);
+        printSection(tpl, "head1", &report);
 
-        printSection("footer", &report);
+        printSection(tpl, "footer", &report);
 
         printf("%s", report);
     }
-    deleteSections();
-    unregisterAllVars();
+
+    /* delete template (free memory) */
+    deleteTemplate(tpl);
+
     free(report);
     return 0;
 }

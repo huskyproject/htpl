@@ -59,11 +59,12 @@ void assignStringValue(char **token, char *value) // assings value to config's s
     }
 }
 
-int parseDirective(char *orig_line)  // extracts token and its values from line
+int parseDirective(template *tpl, char *file, char *orig_line)  // extracts token and its values from line
 {
     char *line;
     char token_label[256];
     int token_id;
+    section *s;
 
     if (orig_line==NULL)
         return 1;
@@ -82,14 +83,30 @@ int parseDirective(char *orig_line)  // extracts token and its values from line
 
     switch (token_id) {
     case ID_INCLUDE:
-        return parseTemplate(stripn(htpl_trimLine(line)));
+        if (tpl->currentSection) {
+            sprintf(htplError, "Found #include directive while section \"%s\" in %s has not been closed by #endsection yet",
+                tpl->currentSection->name, tpl->currentSection->file);
+            return 0;
+        }
+        return parseTemplate(tpl, stripn(htpl_trimLine(line)));
         break;
     case ID_SECTION:
-        return addSection(line);
+        if (tpl->currentSection) {
+            sprintf(htplError, "Found new #section directive while section \"%s\" in %s has not been closed by #endsection yet",
+                tpl->currentSection->name, tpl->currentSection->file);
+            return 0;
+        } else if ((s = findSection(tpl, line)) != NULL) {
+            sprintf(htplError, "Section \"%s\" has already been defined in %s",
+                line, s->file);
+            return 0;
+        } else {
+            s = newSection(file, line);
+            tpl->currentSection = s;
+        }
         break;
     case ID_ENDSECTION:
-        if (currentSection && currentSection->prev)
-            popSection();
+        if (tpl->currentSection)
+            addSection(tpl);
         else {
             sprintf(htplError, "Found #endsection without #section");
             return 0;

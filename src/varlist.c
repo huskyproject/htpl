@@ -5,10 +5,9 @@
 #define DLLEXPORT
 #include <huskylib/huskyext.h>
 
-#include "varlist.h"
 #include "htpl.h"
+#include "varlist.h"
 
-variable *firstVariable=NULL;
 
 variable *newVariable()
 {
@@ -24,10 +23,11 @@ void deleteVariable(variable *v)
     nfree(v);
 }
 
-variable *findVariable(char *label)
+variable *findVariable(template *tpl, char *label)
 {
     variable *v;
-    if ((v = firstVariable) == NULL) return NULL;
+
+    if ((v = tpl->firstVariable) == NULL) return NULL;
     while((v) && (v->label) && (strcmp(v->label, label)))
         v = v->next;
     if ((v == NULL) || (v->label == NULL))
@@ -36,10 +36,11 @@ variable *findVariable(char *label)
         return v;
 }
 
-int registerVariable(char *label, void **value, int type)
+int registerVariable(template *tpl, char *label, void **value, int type)
 {
     variable *v, *vtmp;
-    if ((v=findVariable(label))!=NULL) {
+
+    if ((v = findVariable(tpl, label)) != NULL) {
         sprintf(htplError, "variable \"%s\" has already been registered", label);
         return 0;
     } else
@@ -47,27 +48,42 @@ int registerVariable(char *label, void **value, int type)
     v->label = sstrdup(label);
     v->type = type;
     v->value = value;
-    if (!firstVariable)
-        firstVariable = v;
+    if (!tpl->firstVariable)
+        tpl->firstVariable = v;
     else
     {
-        vtmp = firstVariable;
+        vtmp = tpl->firstVariable;
         while(vtmp->next) vtmp = vtmp->next;
         vtmp->next = v;
     }
     return 1;
 }
 
-void unregisterVariable(char *label)
-{
-    deleteVariable(findVariable(label));
-}
-
-void unregisterAllVars()
+void unregisterVariable(template *tpl, char *label)
 {
     variable *v, *vtmp;
-    v = firstVariable;
-    if ((v = firstVariable) == NULL) return;
+
+    if ((v = tpl->firstVariable) == NULL) return;
+    if ((v->label) && (!strcmp(v->label, label))) {
+        tpl->firstVariable = v->next;
+        deleteVariable(v);
+        return;
+    }
+    while(v->next)
+        if ((v->next->label) && (!strcmp(v->next->label, label))) {
+            vtmp = v->next;
+            v->next = vtmp->next;
+            deleteVariable(vtmp);
+            return;
+        } else
+            v = v->next;
+}
+
+void unregisterVariables(template *tpl)
+{
+    variable *v, *vtmp;
+
+    if ((v = tpl->firstVariable) == NULL) return;
     while(v->next) {
         vtmp = v->next;
         deleteVariable(v);
