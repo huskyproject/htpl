@@ -28,7 +28,7 @@ TARGETDLL = $(DLLPREFIX)$(LIBNAME)$(DLLSUFFIX)$(_DLL)
 OBJS    = parse$(_OBJ) strutil$(_OBJ) token$(_OBJ) sections$(_OBJ) varlist$(_OBJ) format$(_OBJ)
 
 # Header files
-HEADERS	= format.h htpl.h sections.h strutil.h token.h varlist.h
+HEADERS	= format.h htpl.h sections.h parse.h strutil.h token.h varlist.h
 
 # Sources directory
 _SRC_DIR= ../src/

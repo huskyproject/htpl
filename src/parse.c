@@ -12,6 +12,7 @@
 #include "htpl.h"
 #include "token.h"
 #include "sections.h"
+#include "parse.h"
 #include "varlist.h"
 #include "format.h"
 #include "strutil.h"
@@ -159,7 +160,7 @@ int expandLine(template *tpl, char *line, char **output)
             line++;
         } else
         {
-            if (*line == '@' &! escape &! fmtStart)
+            if ((*line == '@') &! (escape) &! (fmtStart))
             {
                 if (!macStart)
                     macStart = line;
@@ -178,7 +179,7 @@ int expandLine(template *tpl, char *line, char **output)
                     macStart = 0;
                 }
             } else
-            if (*line == '%' &! escape &! macStart)
+            if ((*line == '%') &! (escape) &! (macStart))
             {
                 if (!fmtStart) fmtStart = line;
                 else {
@@ -348,4 +349,160 @@ int parseSection(template *tpl, char *name, char **output)
         line = line->next;
     }
     return 1;
+}
+
+int parseDirective(template *tpl, char *file, char *orig_line)  // extracts token and its values from line
+{
+    char *line, *buff;
+    char token_label[256];
+    int token_id, ret;
+    section *s;
+
+    if (orig_line==NULL || strlen(orig_line)<=1)
+        return 1;
+
+    line = htpl_trimLine(orig_line+1);
+
+    memset(token_label, 0, 256);
+    line=detectToken(line, token_label);
+    // now line is without token - just token's value up to the end of line
+    token_id=findTokenID(token_label);
+
+    line = htpl_trimLine(line);
+
+    switch (token_id) {
+    case ID_INCLUDE:
+        if (tpl->currentSection) {
+            sprintf(htplError, "Found #include directive while section \"%s\" in %s has not been closed by #endsection yet",
+                tpl->currentSection->name, tpl->currentSection->file);
+            return 0;
+        }
+        return parseTemplate(tpl, stripn(htpl_trimLine(line)));
+        break;
+    case ID_SECTION:
+        if (tpl->currentSection) {
+            sprintf(htplError, "Found new #section directive while section \"%s\" in %s has not been closed by #endsection yet",
+                tpl->currentSection->name, tpl->currentSection->file);
+            return 0;
+        } else if ((s = findSection(tpl, line)) != NULL) {
+            sprintf(htplError, "Section \"%s\" has already been defined in %s",
+                line, s->file);
+            return 0;
+        } else {
+            s = newSection(file, line);
+            tpl->currentSection = s;
+        }
+        break;
+    case ID_ENDSECTION:
+        if (tpl->currentSection)
+            addSection(tpl);
+        else {
+            sprintf(htplError, "Found #endsection without #section");
+            return 0;
+        }
+        break;
+    case ID_IF:
+        if (!tpl->currentSection) {
+            sprintf(htplError, "Found #if directive out of section");
+            return 0;
+        } else if (line == NULL || strlen(line) == 0) {
+            sprintf(htplError, "No expression after #if directive");
+            return 0;
+        }
+        s = tpl->currentSection;
+        expandLine(tpl, line, &buff);
+        s->iflevel++;
+        if (s->iflevel == s->maxif)
+          s->ifstack = srealloc(s->ifstack, (s->maxif+=10)*sizeof(ifstack));
+        s->ifstack[s->iflevel].inelse = 0;
+        if ((ret = boolExpression(buff)) == -1) return 0;  /* error */
+        s->ifstack[s->iflevel].state = ret;
+        s->condition = s->ifstack[s->iflevel].state;
+        nfree(buff);
+        return 2;
+    case ID_ELSEIF:
+        if (!tpl->currentSection) {
+            sprintf(htplError, "Found #elseif directive out of section");
+            return 0;
+        } else if ((tpl->currentSection->iflevel==-1) || tpl->currentSection->ifstack[tpl->currentSection->iflevel].inelse) {
+            sprintf(htplError, "Misplaced #elseif");
+            return 0;
+        } else if (line == NULL || strlen(line) == 0) {
+            sprintf(htplError, "No expression after #else directive");
+            return 0;
+        }
+        s = tpl->currentSection;
+        expandLine(tpl, line, &buff);
+        if (s->ifstack[s->iflevel].state)
+          s->ifstack[s->iflevel].state = 0;
+        else {
+          if ((ret = boolExpression(buff)) == -1) return 0;  /* error */
+          s->ifstack[s->iflevel].state = ret;
+        }
+        s->condition = s->ifstack[s->iflevel].state;
+        nfree(buff);
+        return 2;
+    case ID_ELSE:
+        if (!tpl->currentSection) {
+            sprintf(htplError, "Found #else directive out of section");
+            return 0;
+        } else if ((tpl->currentSection->iflevel==-1) || tpl->currentSection->ifstack[tpl->currentSection->iflevel].inelse) {
+            sprintf(htplError, "Misplaced #else");
+            return 0;
+        }
+        s = tpl->currentSection;
+        s->ifstack[s->iflevel].inelse = 1;
+        s->ifstack[s->iflevel].state = !s->ifstack[s->iflevel].state;
+        s->condition = s->ifstack[s->iflevel].state;
+        return 2;
+    case ID_ENDIF:
+        if (!tpl->currentSection) {
+            sprintf(htplError, "Found #endif directive out of section");
+            return 0;
+        } else if (tpl->currentSection->iflevel==-1) {
+            sprintf(htplError, "Misplaced #endif");
+            return 0;
+        }
+        s = tpl->currentSection;
+        s->iflevel--;
+        if (s->iflevel == -1)
+            s->condition = 1;
+        else
+            s->condition = s->ifstack[s->iflevel].state;
+        return 2;
+    case ID_IFDEF:
+    case ID_IFNDEF:
+        if (!tpl->currentSection) {
+            sprintf(htplError, "Found #ifdef or #ifndef directive out of section");
+            return 0;
+        } else if (line == NULL || strlen(line) == 0) {
+            sprintf(htplError, "No expression after #ifdef or #ifndef directive");
+            return 0;
+        }
+        s = tpl->currentSection;
+        expandLine(tpl, line, &buff);
+        s->iflevel++;
+        if (s->iflevel == s->maxif)
+            s->ifstack = srealloc(s->ifstack, (s->maxif+=10)*sizeof(ifstack));
+        s->ifstack[s->iflevel].inelse = 0;
+        if (buff == NULL || strlen(buff) == 0)
+            s->ifstack[s->iflevel].state = 0;
+        else
+            s->ifstack[s->iflevel].state = 1;
+        if (token_id == ID_IFNDEF)
+            s->ifstack[s->iflevel].state = !s->ifstack[s->iflevel].state;
+        s->condition = s->ifstack[s->iflevel].state;
+        nfree(buff);
+        return 2;
+    case -1:
+        sprintf(htplError, "Internal error while searching for token id");
+        return 0;
+    case -2:
+        sprintf(htplError, "unknown token: %s", token_label);
+        return 0;
+    default:
+        sprintf(htplError, "Internal error while processing token id");
+        return 0;
+    }
+    return 1; // all ok
 }

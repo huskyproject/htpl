@@ -8,10 +8,13 @@ extern "C" {
 #include <huskylib/compiler.h>
 #include <huskylib/huskylib.h>
 
-section *findSection(template *tpl, char *name);
+sectionLine *newLine();
 void addLine(section *s, char *text, int lineNo);
-int addSection(template *tpl);
+void deleteLine(sectionLine *l);
 section *newSection(char *file, char *name);
+section *findSection(template *tpl, char *name);
+int addSection(template *tpl);
+void deleteSection(section *s);
 void deleteAllSections(template *tpl);
 
 #ifdef __cplusplus

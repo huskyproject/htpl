@@ -28,6 +28,9 @@ enum {
 
 extern token tokens[];
 
+char *detectToken(char *line, char *token_label);
+int findTokenID(char *token_label);
+
 #ifdef __cplusplus
 }
 #endif

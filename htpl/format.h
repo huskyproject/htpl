@@ -12,7 +12,7 @@ enum { A_LEFT, A_RIGHT, A_CENTER };
 
 typedef struct {
     int align;
-    int maxlen;
+    unsigned int maxlen;
     char *pattern;
 } format_t;
 

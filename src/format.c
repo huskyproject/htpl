@@ -105,7 +105,6 @@ char *varFormat(char **output, format_t *format, char *str)
 int parseStrFormat(format_t *format, char *formatstr)
 {
     char intstr[6];
-    char fmtlabel;
     int i=0, i_off=0;
 
     if ((formatstr == NULL) || (strlen(formatstr)==0)) return 0;
