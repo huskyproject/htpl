@@ -1,0 +1,53 @@
+2004-01-30 Friday 16:11  andrew_ladutsko
+
+	* test.c (1.2), doc/FORMAT.draft (1.2), htpl/htpl.h (1.2),
+	htpl/sections.h (1.2), htpl/varlist.h (1.2), src/parse.c (1.4),
+	src/sections.c (1.3), src/token.c (1.3), src/varlist.c (1.3): added
+	ability to work with multiple templates at one time
+
+2004-01-27 Tuesday 12:13  andrew_ladutsko
+
+	* src/parse.c (1.3): removed include of <sys/param.h>: should be
+	included by huskylib if needed
+
+2004-01-27 Tuesday 09:26  andrew_ladutsko
+
+	* src/: mem.c (1.2), xstr.c (1.3): use huskylib instead of this
+	files
+
+2004-01-27 Tuesday 09:24  andrew_ladutsko
+
+	* src/: format.c (1.2), parse.c (1.2), sections.c (1.2), strutil.c
+	(1.2), token.c (1.2), varlist.c (1.2): support building with
+	huskylib
+
+2004-01-27 Tuesday 09:23  andrew_ladutsko
+
+	* Makefile (1.2): fixed building
+
+2004-01-27 Tuesday 09:17  andrew_ladutsko
+
+	* make/: makefile.inc (1.1), makefile.mvc (1.1): added makefiles
+	for building with MSVC6
+
+2004-01-27 Tuesday 09:12  andrew_ladutsko
+
+	* htpl/: format.h (1.1), htpl.h (1.1), sections.h (1.1), strutil.h
+	(1.1), token.h (1.1), varlist.h (1.1): renaming *.h
+
+2003-01-15 Wednesday 06:00  stas_degteff
+
+	* src/xstr.c (1.2): Update defines (changed in smapi/compiler.h)
+
+2002-07-27 Saturday 13:21  d.sergienko
+
+	* .cvs2cl (1.1), .cvsignore (1.1): special files...
+
+2002-07-27 Saturday 13:19  d.sergienko
+
+	* Makefile (1.1), TODO (1.1), test.c (1.1), test.out (1.1),
+	test.tpl (1.1), doc/FORMAT.draft (1.1), src/format.c (1.1),
+	src/mem.c (1.1), src/parse.c (1.1), src/sections.c (1.1),
+	src/strutil.c (1.1), src/token.c (1.1), src/varlist.c (1.1),
+	src/xstr.c (1.1): Initial revision
+
