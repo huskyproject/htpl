@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <malloc.h>
+
+#define DLLIMPORT
+#include <huskylib/huskyext.h>
 #include "htpl/htpl.h"
 
 int main()

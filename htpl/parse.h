@@ -12,7 +12,7 @@ void getValue(template *tpl, char *name, char **result);
 short boolExpression(char *str);
 int expandMacro(template *tpl, char **macro);
 int expandLine(template *tpl, char *line, char **output);
-int htpl_readLine(template *tpl, char *file, char *line, int lineNo);
+int parseLine(template *tpl, char *file, char *line, int lineNo);
 int parseDirective(template *tpl, char *file, char *orig_line);
 
 #ifdef __cplusplus

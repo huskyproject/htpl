@@ -225,12 +225,10 @@ int expandLine(template *tpl, char *line, char **output)
     return 1;
 }
 
-int htpl_readLine(template *tpl, char *file, char *line, int lineNo)
+int parseLine(template *tpl, char *file, char *line, int lineNo)
 {
     char *out = NULL;
     int rc = 1;
-
-    line = stripn(line);
 
     if (*line == '#') {
         rc = parseDirective(tpl, file, line);
@@ -258,7 +256,7 @@ int parseTemplate(template *tpl, char *file)
     FILE *f;
     char *val=NULL;
     char *line=NULL;
-    int lineNo=0;
+    int lineNo=0, length=0, i=0, eof=0, eol=0, ch;
 
     if (!tpl) {
         sprintf(htplError, "Error: template structure should be defined!");
@@ -269,23 +267,50 @@ int parseTemplate(template *tpl, char *file)
         return 0;
     }
 
-    line = (char *) scalloc(MAXPATHLEN, 1);
     f = fopen(file, "rt");
     if (!f) {
         sprintf(htplError, "Can't open file %s: %s", file, strerror(errno));
         return 0;
     }
 
-    while(fgets(line, MAXPATHLEN, f))
-    {
+
+    while (!eof) {
+
+        /* read line */
+        do {
+            /* not fgets() 'cause it concatenates lines without \r on Watcom C / WinDos */
+            ch = getc(f);
+
+            if (i >= length) {
+                length += 128;
+                line = srealloc(line, length);
+            }
+
+            if (ch < 0) {  /* EOF */
+                line[i] = '\0';
+                eol++;
+                eof++;
+            } else {
+                if (ch == '\n') {  /* EOL */
+                    line[i] = '\0';
+                    eol++;
+                } else if (ch != '\r') {  /* CR (must be before LF), ignore */
+                    line[i] = ch;
+                    i++;
+                }
+            }
+        } while (!eol);
+
+        /* parse line */
         lineNo++;
-        if (!htpl_readLine(tpl, file, line, lineNo))
+        if (!parseLine(tpl, file, line, lineNo))
         {
             makeErrorHeader("Error at %s:%d - ", file, lineNo);
             nfree(line);
             fclose(f);
             return 0;
         }
+        eol = i = 0;
     }
 
     nfree(line);
@@ -377,7 +402,7 @@ int parseDirective(template *tpl, char *file, char *orig_line)  // extracts toke
                 tpl->currentSection->name, tpl->currentSection->file);
             return 0;
         }
-        return parseTemplate(tpl, stripn(htpl_trimLine(line)));
+        return parseTemplate(tpl, htpl_trimLine(line));
         break;
     case ID_SECTION:
         if (tpl->currentSection) {

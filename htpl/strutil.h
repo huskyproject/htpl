@@ -9,7 +9,6 @@ extern "C" {
 #include <huskylib/huskylib.h>
 
 char *htpl_trimLine(char *line);
-char *stripn(char *line);
 
 #ifdef __cplusplus
 }
