@@ -19,7 +19,7 @@
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with HPT; see the file COPYING.  If not, write to the Free
  * Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -33,7 +33,7 @@
 
 #define N_PRINTFBUF	512
 
-char *xstralloc(char **s, size_t add) 
+char *xstralloc(char **s, size_t add)
 {
     int n;
     if (*s == NULL) {
@@ -58,10 +58,10 @@ char *xstrscat(char **s, ...)
     va_list	ap;
     char	*q, *p;
     int	ncat;
-    for (va_start(ap, s), ncat = 0; (p = va_arg(ap, char *)) != NULL; ) 
+    for (va_start(ap, s), ncat = 0; (p = va_arg(ap, char *)) != NULL; )
 	    ncat += strlen(p);
     p = xstralloc(s, ncat);
-    for (va_start(ap, s); (q = va_arg(ap, char *)) != NULL; ) 
+    for (va_start(ap, s); (q = va_arg(ap, char *)) != NULL; )
 	    p = strcat(p, q);
     return p;
 }
@@ -72,23 +72,23 @@ char *xstrcpy(char **s, char *add)
     return xstrcat(s, add);
 }
 
-int xscatprintf(char **s, const char *format, ...) 
+int xscatprintf(char **s, const char *format, ...)
 {
     va_list ap;
-#if defined(HAS_VASPRINTF)
+#if defined(HAS_vasprintf)
     char *addline;
-#elif defined(HAS_VSNPRINTF)
+#elif defined(HAS_vsnprintf)
     char *addline;
     int  nmax;
 #else
     char addline[N_PRINTFBUF];
 #endif
     int  nprint;
-    
+
     va_start(ap, format);
-#if defined(HAS_VASPRINTF)
+#if defined(HAS_vasprintf)
     vasprintf(&addline, format, ap);
-#elif defined(HAS_VSNPRINTF)
+#elif defined(HAS_vsnprintf)
     addline = NULL;
     for (nmax = N_PRINTFBUF; ; ) {
 	    xstralloc(&addline, nmax);
@@ -108,14 +108,14 @@ int xscatprintf(char **s, const char *format, ...)
 	    fprintf(stderr, "sprintf buffer overflow at xscatprintf.\n" \
 			    "used %d bytes instead of %d\n" \
 			    "format leading to this was : %s\n"\
-			    "please tell the developers\n", nprint, 
+			    "please tell the developers\n", nprint,
 			    N_PRINTFBUF, format);
 	    abort();
     };
 #endif
     va_end(ap);
     xstrcat(s, addline);
-#if defined(HAS_VASPRINTF) || defined(HAS_VSNPRINTF)
+#if defined(HAS_vasprintf) || defined(HAS_vsnprintf)
     free(addline);
 #endif
     return nprint;
@@ -135,4 +135,4 @@ int main(void)
 	return strcmp(s, "1234567890 test this one 3 4");
 }
 
-#endif 
+#endif
