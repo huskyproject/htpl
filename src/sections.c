@@ -1,5 +1,11 @@
+#include <huskylib/compiler.h>
+#include <huskylib/huskylib.h>
+
+/* export functions from DLL */
+#define DLLEXPORT
+#include <huskylib/huskyext.h>
+
 #include "sections.h"
-#include "mem.h"
 #include "htpl.h"
 
 typedef struct
@@ -121,6 +127,8 @@ int addSection(char *name)
         s->prev = stmp;
     }
     pushSection(s);
+
+    return 1;
 }
 
 void deleteSections()

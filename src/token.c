@@ -1,6 +1,13 @@
 #include <string.h>
 #include <stdio.h>
-#include "mem.h"
+
+#include <huskylib/compiler.h>
+#include <huskylib/huskylib.h>
+
+/* export functions from DLL */
+#define DLLEXPORT
+#include <huskylib/huskyext.h>
+
 #include "strutil.h"
 #include "token.h"
 #include "htpl.h"
@@ -61,7 +68,7 @@ int parseDirective(char *orig_line)  // extracts token and its values from line
     if (orig_line==NULL)
         return 1;
 
-    line=(char *) sstrdup(stripn(trimLine(orig_line)));
+    line=(char *) sstrdup(stripn(htpl_trimLine(orig_line)));
 
     if (strlen(line)==0)
         return 1;
@@ -71,11 +78,11 @@ int parseDirective(char *orig_line)  // extracts token and its values from line
     // now line is without token - just token's value up to the end of line
     token_id=findTokenID(token_label);
 
-    line=trimLine(line);
+    line=htpl_trimLine(line);
 
     switch (token_id) {
     case ID_INCLUDE:
-        return parseTemplate(stripn(trimLine(line)));
+        return parseTemplate(stripn(htpl_trimLine(line)));
         break;
     case ID_SECTION:
         return addSection(line);

@@ -1,5 +1,11 @@
+#include <huskylib/compiler.h>
+#include <huskylib/huskylib.h>
+
+/* export functions from DLL */
+#define DLLEXPORT
+#include <huskylib/huskyext.h>
+
 #include "varlist.h"
-#include "mem.h"
 #include "htpl.h"
 
 variable *firstVariable=NULL;
@@ -49,6 +55,7 @@ int registerVariable(char *label, void **value, int type)
         while(vtmp->next) vtmp = vtmp->next;
         vtmp->next = v;
     }
+    return 1;
 }
 
 void unregisterVariable(char *label)

@@ -1,11 +1,16 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
-#include <sys/param.h>
+//#include <sys/param.h> //al: what is this?
+
+#include <huskylib/compiler.h>
+#include <huskylib/huskylib.h>
+
+/* export functions from DLL */
+#define DLLEXPORT
+#include <huskylib/huskyext.h>
 
 #include "htpl.h"
-#include "xstr.h"
-#include "mem.h"
 #include "token.h"
 #include "sections.h"
 #include "varlist.h"
@@ -57,7 +62,7 @@ int getValue(char *name, void **result)
         xstrcat((char **)result, "abc123");
     } else if (!strcmp(name, "time")) {
         time_t tp=time(NULL);
-        xstrcat((char **)result, (char *) trimLine(stripn(ctime(&tp))));
+        xstrcat((char **)result, (char *) htpl_trimLine(stripn(ctime(&tp))));
     } else
         return 0;
 
@@ -110,7 +115,7 @@ int expandMacro(char **macro)
     return 1;
 }
 
-int parseLine(char *line, char **output)
+int htpl_parseLine(char *line, char **output)
 {
     int i, escape=0;
     char *ptr;
@@ -198,12 +203,14 @@ int parseLine(char *line, char **output)
     return 1;
 }
 
-int readLine(char *line, char *file, int lineNo)
+int htpl_readLine(char *line, char *file, int lineNo)
 {
     if (*line == '#')
         return parseDirective(line+1);
     else
         addLine(currentSection, line, file, lineNo);
+
+    return 1;
 }
 
 int parseTemplate(char *filename)
@@ -224,7 +231,7 @@ int parseTemplate(char *filename)
     while(fgets(line, MAXPATHLEN, f))
     {
         lineNo++;
-        if (!readLine(line, filename, lineNo))
+        if (!htpl_readLine(line, filename, lineNo))
         {
             makeErrorHeader("Error at %s:%d - ", filename, lineNo);
             nfree(line);
@@ -250,7 +257,7 @@ int parseSection(char *name, char **output)
 
     s->line = s->firstLine;
     while(s->line->next) {
-        if (parseLine(s->line->text, &buff))
+        if (htpl_parseLine(s->line->text, &buff))
             xstrcat(output, buff);
         else {
             makeErrorHeader("Error at %s:%d - ", s->line->file, s->line->lineNo);
@@ -258,7 +265,7 @@ int parseSection(char *name, char **output)
         }
         s->line = s->line->next;
     }
-    if (parseLine(s->line->text, &buff))
+    if (htpl_parseLine(s->line->text, &buff))
         xstrcat(output, buff);
     else
         return 0;

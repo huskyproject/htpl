@@ -3,8 +3,14 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <huskylib/compiler.h>
+#include <huskylib/huskylib.h>
+
+/* export functions from DLL */
+#define DLLEXPORT
+#include <huskylib/huskyext.h>
+
 #include "format.h"
-#include "mem.h"
 
 int parseVarFormat(format_t *format, char *formatstr, int maxstrsize)
 {

@@ -2,10 +2,16 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "strutil.h"
-#include "mem.h"
+#include <huskylib/compiler.h>
+#include <huskylib/huskylib.h>
 
-char *trimLine(char *line)
+/* export functions from DLL */
+#define DLLEXPORT
+#include <huskylib/huskyext.h>
+
+#include "strutil.h"
+
+char *htpl_trimLine(char *line)
 {
     char *end_of_line;
 
