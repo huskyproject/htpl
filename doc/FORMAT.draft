@@ -1,0 +1,64 @@
+Template for report can contain the following special characters:
+@ - start and end of macros. Example - @test@,             @time%|5@
+                                        ^^^^ variable name       ^^ format
+% - start/end of string format                    
+{} - place for fill substring (string formatting)
+# - parser directive. Must be 1st character in string.
+\ - escape character. Next character after escape won't be read as special 
+	character and will be drawn as is.
+        
+Parser directives:
+#include <filename>
+#section <name>
+#endsection
+
+Formatting:
+There is two methods of formatting:
+1) formatting variables
+2) formatting strings
+
+To format variable you should write % sign after its name and write format 
+pattern. Pattern can be in 2 formats:
+1) <align sign><maximum length>
+	In this case variable will be drawn aligned to <align sign> not more 
+        than <maximum length> characters.
+2) <align sign><align sign><align sign><align sign>  (repeats several times)
+	The same, but maximum length is calculated by length of all macro 
+        (including '@' signs.
+
+Align signs:
+'<' - align to left (default if not defined)
+'>' - align to right
+'|' - align to center
+
+Example:
+Macro:  @time%40@
+Output: "Sat Jul 27 15:35:18 EEST 2002      "
+
+Macro:  @time%|40@
+Output: "   Sat Jul 27 15:35:18 EEST 2002   "
+
+Macro:   @time%||||||||||||||||||||||||||||@
+Output: "   Sat Jul 27 15:35:18 EEST 2002   "
+
+Macro:   @time%<<<<<<<<<<<<<<<<<<<<<<<<<<<<@
+Output: "Sat Jul 27 15:35:18 EEST 2002      "
+
+Macro:   @time%>>>>>>>>>>>>>>>>>>>>>>>>>>>>@
+Output: "      Sat Jul 27 15:35:18 EEST 2002"
+
+To format string you should write format at the end of string to be formatted
+between '%' signs.
+Format: <maximum length>{<fill substring>}
+
+Example:
+@status%1@ @areaTag@ {} "@description@"%78{.}%
+
+Output:
+* 910.ANNOUNCE .......................................... "Fileecho announces"
+
+Example:
+.{}=[ Hello, @ToName@! ]={}.%78{-}%
+
+Output:
+.------------------------------=[ Hello, Ed! ]=------------------------------.

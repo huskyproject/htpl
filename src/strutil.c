@@ -1,0 +1,32 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#include "strutil.h"
+#include "mem.h"
+
+char *trimLine(char *line)
+{
+    char *end_of_line;
+
+    if (line==NULL)
+        return NULL;
+
+    while((*line == ' ' || *line == '\t') && (strlen(line) > 0)) // skip spaces/tabs at the beginning
+        line++;
+
+    end_of_line=line+strlen(line);
+    while((*line == ' ' || *line == '\t') && (end_of_line > line)) // skip spaces/tabs at the ending
+        end_of_line--;
+
+    return line;
+}
+
+char *stripn(char *line)
+{
+    if (line == NULL) return NULL;
+    if (strlen(line) < 1) return line;
+    if (line[strlen(line)-1] == '\n') line[strlen(line)-1] = '\0';
+    return line;
+}
+
